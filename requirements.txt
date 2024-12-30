@@ -2,3 +2,4 @@ streamlit
 pyCricbuzz
 scikit-learn
 pandas
+toml
