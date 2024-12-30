@@ -9,7 +9,7 @@ api_key = st.secrets['cricapi']['API_key'] # Replace with your actual API key
 BASE_URL = "https://cricapi.com/api/"
 
 def fetch_teams():
-    url = f"{BASE_URL}teams?apikey={API_KEY}"
+    url = f"{BASE_URL}teams?apikey={api_key }"
     response = requests.get(url)
     data = response.json()
     if data['status'] == 'success':
