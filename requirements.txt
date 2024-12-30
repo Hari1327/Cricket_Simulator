@@ -1,4 +1,4 @@
 streamlit
 pyCricbuzz
-sklearn
+scikit-learn
 pandas
