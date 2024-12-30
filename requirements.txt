@@ -1,4 +1,4 @@
 streamlit
 pyCricbuzz
-torch
-numpy
+sklearn
+pandas
