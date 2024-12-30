@@ -1,13 +1,11 @@
 import streamlit as st
 import requests
 import random
-import toml
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 
 # Fetching data from CricAPI
-config = toml.load('config.toml')
-API_KEY = config['cricapi']['api_key']  # Replace with your actual API key
+api_key = st.secrets["general"]["api_key"]  # Replace with your actual API key
 BASE_URL = "https://cricapi.com/api/matches?apikey=<API_KEY>"
 
 def fetch_teams():
