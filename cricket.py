@@ -1,73 +1,79 @@
 import streamlit as st
-import pyCricbuzz
+import requests
+import random
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
 
-# Initialize the Cricbuzz API
-c = pyCricbuzz.Cricbuzz()
+# Fetching data from CricAPI
+API_KEY = 'API_KEY'  # Replace with your actual API key
+BASE_URL = "https://cricapi.com/api/"
 
-# Function to fetch player data from Cricbuzz
-def fetch_player_data():
-    # Fetching players' data (example: batsmen's average, bowling average)
-    # You can use specific player stats based on team/season or global
-    # This will be a placeholder; you can customize based on available data
-    player_stats = {
-        "Player1": {"batting_average": 30, "bowling_average": 25},
-        "Player2": {"batting_average": 35, "bowling_average": 28},
-        "Player3": {"batting_average": 22, "bowling_average": 35},
-        "Player4": {"batting_average": 40, "bowling_average": 22},
-        "Player5": {"batting_average": 15, "bowling_average": 40},
-    }
-    return player_stats
-
-# Simulate match based on input data
-def simulate_match(team1, team2, format):
-    # Fetch player data
-    team1_data = fetch_player_data()
-    team2_data = fetch_player_data()
-
-    # Feature Engineering: Calculate average batting and bowling stats
-    team1_batting_avg = sum([player["batting_average"] for player in team1_data.values()]) / len(team1_data)
-    team1_bowling_avg = sum([player["bowling_average"] for player in team1_data.values()]) / len(team1_data)
-
-    team2_batting_avg = sum([player["batting_average"] for player in team2_data.values()]) / len(team2_data)
-    team2_bowling_avg = sum([player["bowling_average"] for player in team2_data.values()]) / len(team2_data)
-
-    # Feature set: [batting_avg, bowling_avg, format (encoded)]
-    format_encoding = {"T20": 0, "ODI": 1, "Test": 2}
-    features = [[team1_batting_avg, team1_bowling_avg, format_encoding[format]],
-                [team2_batting_avg, team2_bowling_avg, format_encoding[format]]]
-
-    # Dummy Random Forest Model - Placeholder for an actual trained model
-    model = RandomForestClassifier()
-    
-    # Normally, you would train your model with historical match data
-    # Here, we simulate with random data just for illustration
-    data = [[35, 28, 0], [30, 26, 1], [25, 29, 2], [32, 27, 0]]  # Example feature data
-    labels = [1, 0, 1, 0]  # 1 = Team1 wins, 0 = Team2 wins
-    X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.2)
-    
-    model.fit(X_train, y_train)
-
-    # Predict the outcome (team1 vs team2 win prediction)
-    result = model.predict(features)
-
-    if result[0] == 1:
-        return f"{team1} wins the match!"
+def fetch_teams():
+    url = f"{BASE_URL}teams?apikey={API_KEY}"
+    response = requests.get(url)
+    data = response.json()
+    if data['status'] == 'success':
+        return [team['name'] for team in data['teams']]
     else:
-        return f"{team2} wins the match!"
+        return []
 
-# Streamlit UI
-st.title("Cricket Match Simulator")
+def fetch_player_stats(team_name):
+    url = f"{BASE_URL}players?apikey={API_KEY}&team={team_name}"
+    response = requests.get(url)
+    data = response.json()
+    if data['status'] == 'success':
+        return data['players']
+    else:
+        return []
 
-# User inputs
-team1 = st.selectbox("Choose Team 1", ["India", "Australia", "England", "Pakistan", "South Africa", "New Zealand"])
-team2 = st.selectbox("Choose Team 2", ["India", "Australia", "England", "Pakistan", "South Africa", "New Zealand"])
-format = st.radio("Choose Match Format", ("T20", "ODI", "Test"))
+# Function to simulate a cricket match
+def simulate_match(team1, team2, match_format):
+    # Fetch players for both teams
+    players1 = fetch_player_stats(team1)
+    players2 = fetch_player_stats(team2)
+    
+    # Here, we'll use random selection for simplicity
+    # In a real scenario, we would use player stats to simulate match outcome
+    score1 = random.randint(150, 350)  # Simulated score for Team 1
+    score2 = random.randint(150, 350)  # Simulated score for Team 2
 
-# Run the simulation on button click
-if st.button("Simulate Match"):
-    result = simulate_match(team1, team2, format)
-    st.write(result)  # Display the match simulation results
+    # Determine winner based on score
+    if score1 > score2:
+        winner = team1
+    elif score2 > score1:
+        winner = team2
+    else:
+        winner = "Draw"
+    
+    # Simulate result in a basic format
+    match_result = {
+        'team1': team1,
+        'team2': team2,
+        'team1_score': score1,
+        'team2_score': score2,
+        'winner': winner
+    }
+    return match_result
+
+# Create Streamlit user interface
+def main():
+    st.title("Cricket Match Simulator")
+    
+    # Choose teams and match format
+    teams = fetch_teams()
+    team1 = st.selectbox("Select Team 1", teams)
+    team2 = st.selectbox("Select Team 2", teams)
+    match_format = st.selectbox("Match Format", ["T20", "ODI", "Test"])
+    
+    # Simulate match button
+    if st.button("Simulate Match"):
+        result = simulate_match(team1, team2, match_format)
+        st.write(f"**Match Result:**")
+        st.write(f"{result['team1']} vs {result['team2']}")
+        st.write(f"{result['team1']} Score: {result['team1_score']}")
+        st.write(f"{result['team2']} Score: {result['team2_score']}")
+        st.write(f"**Winner:** {result['winner']}")
+
+# Run the app
+if __name__ == "__main__":
+    main()
