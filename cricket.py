@@ -5,8 +5,8 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 
 # Fetching data from CricAPI
-api_key = st.secrets["general"]["api_key"]  # Replace with your actual API key
-BASE_URL = "https://cricapi.com/api/matches?apikey=<API_KEY>"
+api_key = st.secrets['cricapi']['API_key'] # Replace with your actual API key
+BASE_URL = "https://cricapi.com/api/"
 
 def fetch_teams():
     url = f"{BASE_URL}teams?apikey={API_KEY}"
