@@ -1,131 +1,73 @@
 import streamlit as st
 import pyCricbuzz
-import torch
-import numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
-# Initialize PyCricbuzz Client
-def get_player_stats(team_name):
-    client = pyCricbuzz.PycBuzzClient()
-    
-    # Fetch the current series (you can modify to use specific series or matches)
-    matches = client.matches()
-    # Get ongoing match details (if any)
-    if matches:
-        match_id = matches[0]['id']  # Use the first ongoing match
-        match_details = client.match_details(match_id)
-        
-        # Filter players for the requested team
-        players = []
-        for player in match_details['players']:
-            if team_name.lower() in player['team'].lower():
-                players.append({
-                    'name': player['name'],
-                    'bat_avg': player['batting_avg'],
-                    'bowl_avg': player.get('bowling_avg', 0),  # Handle cases where bowling avg is missing
-                    'team': player['team']
-                })
-        return players
-    return []
+# Initialize the Cricbuzz API
+c = pyCricbuzz.Cricbuzz()
 
-# Dummy Model for Simulation (Replace with actual deep learning model)
-class CricketMatchSimulator(torch.nn.Module):
-    def __init__(self):
-        super(CricketMatchSimulator, self).__init__()
-        self.fc = torch.nn.Linear(10, 2)  # Example structure
-
-    def forward(self, x):
-        return self.fc(x)
-
-# Simulate Match Function
-def simulate_innings(model, team, match_format, max_overs):
-    innings = {
-        "total_runs": 0,
-        "wickets": 0,
-        "overs": [],
-        "players": [{"name": p["name"], "runs": 0, "balls": 0, "out": False} for p in team]
+# Function to fetch player data from Cricbuzz
+def fetch_player_data():
+    # Fetching players' data (example: batsmen's average, bowling average)
+    # You can use specific player stats based on team/season or global
+    # This will be a placeholder; you can customize based on available data
+    player_stats = {
+        "Player1": {"batting_average": 30, "bowling_average": 25},
+        "Player2": {"batting_average": 35, "bowling_average": 28},
+        "Player3": {"batting_average": 22, "bowling_average": 35},
+        "Player4": {"batting_average": 40, "bowling_average": 22},
+        "Player5": {"batting_average": 15, "bowling_average": 40},
     }
+    return player_stats
 
-    for over in range(max_overs):
-        if innings["wickets"] == len(team):
-            break  # All players are out
+# Simulate match based on input data
+def simulate_match(team1, team2, format):
+    # Fetch player data
+    team1_data = fetch_player_data()
+    team2_data = fetch_player_data()
 
-        # Prepare features for the model (you can adjust this based on your simulation logic)
-        over_features = match_format + [innings["total_runs"], innings["wickets"]]
-        team_features = [p["bat_avg"] for p in team]
-        input_features = torch.tensor(over_features + team_features, dtype=torch.float32)
+    # Feature Engineering: Calculate average batting and bowling stats
+    team1_batting_avg = sum([player["batting_average"] for player in team1_data.values()]) / len(team1_data)
+    team1_bowling_avg = sum([player["bowling_average"] for player in team1_data.values()]) / len(team1_data)
 
-        # Predict runs and wicket probabilities
-        prediction = model(input_features).detach().numpy()
-        runs, wicket_prob = int(prediction[0]), prediction[1]
+    team2_batting_avg = sum([player["batting_average"] for player in team2_data.values()]) / len(team2_data)
+    team2_bowling_avg = sum([player["bowling_average"] for player in team2_data.values()]) / len(team2_data)
 
-        # Update innings state
-        innings["total_runs"] += runs
-        if np.random.rand() < wicket_prob:  # Simulate wicket
-            innings["wickets"] += 1
-            player = innings["players"][innings["wickets"] - 1]
-            player["out"] = True
-            player["runs"] += runs
+    # Feature set: [batting_avg, bowling_avg, format (encoded)]
+    format_encoding = {"T20": 0, "ODI": 1, "Test": 2}
+    features = [[team1_batting_avg, team1_bowling_avg, format_encoding[format]],
+                [team2_batting_avg, team2_bowling_avg, format_encoding[format]]]
 
-        innings["overs"].append({"over": over + 1, "runs": runs, "wickets": innings["wickets"]})
-
-    return innings
-
-def generate_scorecard(team_name, innings):
-    st.write(f"**Scorecard for {team_name}**")
-    st.write(f"**Total:** {innings['total_runs']}/{innings['wickets']}")
-    st.write("**Player Contributions:**")
-    for player in innings["players"]:
-        status = "Out" if player["out"] else "Not Out"
-        st.write(f"{player['name']}: {player['runs']} ({player['balls']} balls) - {status}")
-
-# Encode match format to numerical values
-def encode_match_format(format_choice):
-    format_dict = {"T20": [1, 0, 0], "ODI": [0, 1, 0], "Test": [0, 0, 1]}
-    return format_dict.get(format_choice, [0, 0, 0])
-
-# Streamlit UI for Input
-def app():
-    st.title("Cricket Match Simulator")
+    # Dummy Random Forest Model - Placeholder for an actual trained model
+    model = RandomForestClassifier()
     
-    # Get user inputs for teams and format
-    team_a = st.text_input("Enter Team A Name", "India")
-    team_b = st.text_input("Enter Team B Name", "Australia")
-    format_choice = st.selectbox("Select Match Format", ["T20", "ODI", "Test"])
+    # Normally, you would train your model with historical match data
+    # Here, we simulate with random data just for illustration
+    data = [[35, 28, 0], [30, 26, 1], [25, 29, 2], [32, 27, 0]]  # Example feature data
+    labels = [1, 0, 1, 0]  # 1 = Team1 wins, 0 = Team2 wins
+    X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.2)
     
-    if st.button("Simulate Match"):
-        # Fetch player data for each team using PyCricbuzz
-        team_a_data = get_player_stats(team_a)
-        team_b_data = get_player_stats(team_b)
+    model.fit(X_train, y_train)
 
-        if not team_a_data or not team_b_data:
-            st.write("Could not fetch player data. Please check team names or match status.")
-            return
-        
-        # Encode match format
-        match_format_encoded = encode_match_format(format_choice)
-        
-        # Set max overs based on match format
-        max_overs = 20 if format_choice == "T20" else 50 if format_choice == "ODI" else 90
-        
-        # Load model (replace with your trained model)
-        model = CricketMatchSimulator()
-        
-        # Simulate innings for both teams
-        st.write(f"\n**{team_a} Batting:**")
-        innings_a = simulate_innings(model, team_a_data, match_format_encoded, max_overs)
-        generate_scorecard(team_a, innings_a)
-        
-        st.write(f"\n**{team_b} Batting:**")
-        innings_b = simulate_innings(model, team_b_data, match_format_encoded, max_overs)
-        generate_scorecard(team_b, innings_b)
-        
-        # Determine winner
-        if innings_a["total_runs"] > innings_b["total_runs"]:
-            st.write(f"\n**{team_a} wins by {innings_a['total_runs'] - innings_b['total_runs']} runs!**")
-        elif innings_b["total_runs"] > innings_a["total_runs"]:
-            st.write(f"\n**{team_b} wins by {10 - innings_b['wickets']} wickets!**")
-        else:
-            st.write("\n**Match Drawn!**")
+    # Predict the outcome (team1 vs team2 win prediction)
+    result = model.predict(features)
 
-if __name__ == "__main__":
-    app()
+    if result[0] == 1:
+        return f"{team1} wins the match!"
+    else:
+        return f"{team2} wins the match!"
+
+# Streamlit UI
+st.title("Cricket Match Simulator")
+
+# User inputs
+team1 = st.selectbox("Choose Team 1", ["India", "Australia", "England", "Pakistan", "South Africa", "New Zealand"])
+team2 = st.selectbox("Choose Team 2", ["India", "Australia", "England", "Pakistan", "South Africa", "New Zealand"])
+format = st.radio("Choose Match Format", ("T20", "ODI", "Test"))
+
+# Run the simulation on button click
+if st.button("Simulate Match"):
+    result = simulate_match(team1, team2, format)
+    st.write(result)  # Display the match simulation results
