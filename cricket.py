@@ -5,7 +5,8 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 
 # Fetching data from CricAPI
-API_KEY = 'API_KEY'  # Replace with your actual API key
+config = toml.load('config.toml')
+API_KEY = config['cricapi']['api_key']  # Replace with your actual API key
 BASE_URL = "https://cricapi.com/api/"
 
 def fetch_teams():
