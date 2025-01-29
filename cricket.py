@@ -4,7 +4,7 @@ import pandas as pd
 # Load player data
 @st.cache_data
 def load_player_data():
-    df = pd.read_csv("Cricket_Simulator/Batters.csv")
+    df = pd.read_csv("Batters.csv")
     df['Role'] = df.apply(lambda row: 
         'Batter' if row['Batter'] == 1 else
         'Bowler' if row['Bowler'] == 1 else
